@@ -9,14 +9,28 @@ pipeline{
             }
         }
 
-        stage('Build and Deploy to ECR'){
+        stage('Build Image') {
+            steps {
+                script{
+                    app= docker.build("aline-users-sd")
+                }
+
+            }
+
+        }
+
+        stage('Deploy to ECR'){
             steps{
-               withCredentials([string(credentialsID: 'ecr-url-user', variable: 'ECR_URL')]){
-                   sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_URL'
-                   sh 'docker build -t aline-user-sd'
-                   sh 'docker tag aline-user-sd:latest $ECR_URL/aline-user-sd:latest'
-                   sh 'docker push $ECR_URL/aline-user-sd:latest'
+                script {
+                    docker.withRegistry('https://032797834308.dkr.ecr.us-east-1.amazonaws.com/', 'ecr:us-east-1:aws-sd'){
+                        app.push('latest-' + env.BRANCH_NAME)
+                    }
                }
+            }
+        }
+        stage('Cleanup') {
+            steps{
+                sh 'docker system prune -f'
             }
         }
     }

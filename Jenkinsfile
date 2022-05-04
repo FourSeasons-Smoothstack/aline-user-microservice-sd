@@ -1,5 +1,8 @@
 pipeline{
     agent any
+    environment {
+    VERSION = readMavenPom().getVersion()
+    }
     stages{
 
         stage('Build Artifact') {
@@ -22,8 +25,10 @@ pipeline{
         stage('Deploy to ECR'){
             steps{
                 script {
-                    docker.withRegistry('https://032797834308.dkr.ecr.us-east-1.amazonaws.com/', 'ecr:us-east-1:aws-sd'){
-                        app.push('latest-' + env.BRANCH_NAME)
+                    withCredentials([string(credentialsId: 'ecr-url', variable: 'ECRURL')]) {
+                    docker.withRegistry("${ECRURL}", 'ecr:us-east-1:aws-sd'){
+                        app.push("${VERSION}-" + env.BRANCH_NAME)
+                        }
                     }
                }
             }
